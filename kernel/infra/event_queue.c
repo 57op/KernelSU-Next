@@ -124,7 +124,7 @@ int ksu_event_queue_push(struct ksu_event_queue *queue, __u16 type, __u16 flags,
         return -EINVAL;
     }
 
-    node = kmalloc(struct_size(node, payload, len), gfp);
+    node = kmalloc(sizeof(*node) + len, gfp);
 
     if (node) {
         INIT_LIST_HEAD(&node->list);
