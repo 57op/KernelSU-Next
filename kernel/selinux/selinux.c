@@ -261,4 +261,6 @@ void escape_to_root_for_adb_root(void)
         abort_creds(cred);
         return;
     }
+    commit_creds(cred);
+}
 
