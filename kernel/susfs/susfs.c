@@ -29,6 +29,10 @@
 extern bool susfs_is_current_ksu_domain(void);
 extern void setup_selinux(const char *domain, struct cred *cred);
 extern struct cred *ksu_cred;
+extern void susfs_set_ksu_sid(void);
+extern void susfs_set_zygote_sid(void);
+extern void susfs_set_init_sid(void);
+extern void susfs_set_priv_app_sid(void);
 
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 DEFINE_STATIC_KEY_TRUE(susfs_is_log_enabled);
@@ -533,8 +537,8 @@ out:
 /* ----------------------------------------------------------------- */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 static char *fake_cmdline_or_bootconfig;
-DEFINE_STATIC_KEY_FALSE(susfs_is_fake_cmdline_or_bootconfig_buffer_set);
 static DEFINE_SEQLOCK(susfs_fake_cmdline_or_bootconfig_seqlock);
+DEFINE_STATIC_KEY_FALSE(susfs_is_fake_cmdline_or_bootconfig_buffer_set);
 
 void susfs_set_cmdline_or_bootconfig(void __user **user_info)
 {
@@ -1203,6 +1207,7 @@ static void susfs_sdcard_cleanup_fn(struct work_struct *work)
 
 static int watch_one_dir(struct watch_dir *wd)
 {
+	struct fsnotify_mark *mark;
 	int ret = kern_path(wd->path, LOOKUP_FOLLOW, &wd->kpath);
 	if (ret) {
 		SUSFS_LOGI("path not ready: %s (%d)\n", wd->path, ret);
@@ -1215,7 +1220,16 @@ static int watch_one_dir(struct watch_dir *wd)
 	}
 	ihold(wd->inode);
 
-	ret = fsnotify_add_inode_mark(wd->mark, wd->inode, 0);
+	mark = wd->mark;
+	if (!mark) {
+		SUSFS_LOGE("mark is NULL for '%s'\n", wd->path);
+		iput(wd->inode);
+		wd->inode = NULL;
+		path_put(&wd->kpath);
+		return -EINVAL;
+	}
+
+	ret = fsnotify_add_inode_mark(mark, wd->inode, 0);
 	if (ret) {
 		iput(wd->inode);
 		wd->inode = NULL;
@@ -1267,6 +1281,8 @@ static int susfs_sdcard_monitor_fn(void *data)
 		return -ENOMEM;
 	setup_selinux("u:r:ksu:s0", cred);
 	commit_creds(cred);
+
+	susfs_setup_sids();
 
 	if (!susfs_is_current_ksu_domain())
 		return -EINVAL;
@@ -1328,6 +1344,14 @@ static void susfs_run_extra_works(struct work_struct *work)
 #endif
 }
 
+void susfs_setup_sids(void)
+{
+	susfs_set_ksu_sid();
+	susfs_set_zygote_sid();
+	susfs_set_init_sid();
+	susfs_set_priv_app_sid();
+}
+
 /* ----------------------------------------------------------------- */
 /*  Kernel hook registration                                         */
 /*  Defined here so the symbol exists regardless of Kbuild sed        */
@@ -1360,11 +1384,25 @@ static int __init susfs_register_uname_hook(void)
 static int __init susfs_register_uname_hook(void) { return 0; }
 #endif
 
+#ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+void (*susfs_cmdline_hook)(struct seq_file *m) = NULL;
+static int __init susfs_register_cmdline_hook(void)
+{
+	susfs_cmdline_hook = susfs_spoof_cmdline_or_bootconfig;
+	return 0;
+}
+#else
+static int __init susfs_register_cmdline_hook(void) { return 0; }
+#endif
+
 void susfs_init(void)
 {
 	SUSFS_LOGI("Initializing susfs_extra_works\n");
 	INIT_WORK(&susfs_extra_works, susfs_run_extra_works);
 	susfs_register_kstat_hook();
 	susfs_register_uname_hook();
+	susfs_register_cmdline_hook();
+	/* Best-effort SID initialization; may fail until SELinux policy is loaded */
+	susfs_setup_sids();
 	SUSFS_LOGI("susfs initialized! version: " SUSFS_VERSION "\n");
 }

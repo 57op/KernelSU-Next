@@ -331,6 +331,11 @@ ifneq ($(shell grep -q "susfs_uname_hook" $(srctree)/kernel/sys.c; echo $$?),0)
 $(info -- KSU_NEXT SUSFS: adding susfs_uname_hook call to $(srctree)/kernel/sys.c)
 $(shell sed -i '/^\tup_read(&uts_sem);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_uname_hook))\n\t\tsusfs_uname_hook(\&tmp);\n#endif' $(srctree)/kernel/sys.c)
 endif
+
+ifneq ($(shell grep -q "susfs_cmdline_hook" $(srctree)/fs/proc/cmdline.c; echo $$?),0)
+$(info -- KSU_NEXT SUSFS: adding susfs_cmdline_hook call to $(srctree)/fs/proc/cmdline.c)
+$(shell sed -i '/^\tseq_printf(m, "%s\\n", saved_command_line);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_cmdline_hook)) {\n\t\tsusfs_cmdline_hook(m);\n\t\treturn 0;\n\t}\n#endif' $(srctree)/fs/proc/cmdline.c)
+endif
 endif
 
 # Keep a new line here!! Because someone may append config
