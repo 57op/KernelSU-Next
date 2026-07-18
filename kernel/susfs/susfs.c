@@ -1323,6 +1323,10 @@ static int __init susfs_register_kstat_hook(void) { return 0; }
 void (*susfs_uname_hook)(struct new_utsname *tmp) = NULL;
 static int __init susfs_register_uname_hook(void)
 {
+	write_seqlock(&susfs_uname_seqlock);
+	strscpy(my_uname.release, utsname()->release, __NEW_UTS_LEN);
+	strscpy(my_uname.version, utsname()->version, __NEW_UTS_LEN);
+	write_sequnlock(&susfs_uname_seqlock);
 	susfs_uname_hook = susfs_spoof_uname;
 	return 0;
 }
