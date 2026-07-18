@@ -11,6 +11,8 @@
 #include <linux/fs.h>
 #include "susfs_def.h"
 
+struct mount;
+
 #define SUSFS_VERSION "v2.2.0"
 #define SUSFS_VARIANT "Standalone"
 

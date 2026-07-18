@@ -19,6 +19,7 @@
 #include <linux/fsnotify_backend.h>
 #include <linux/jump_label.h>
 #include <linux/mount.h>
+#include <mount.h>
 #include <linux/dcache.h>
 #include <linux/hashtable.h>
 #include <linux/srcu.h>
