@@ -1,6 +1,4 @@
 <div align="center">
-  <img src="/assets/kernelsu_next.png" width="96" alt="KernelSU Next Logo">
-
   <h2>KernelSU Next Standalone SUSFS</h2>
   <p><strong>A kernel-based root solution for Android devices.</strong></p>
 
@@ -23,6 +21,8 @@
 
 A KernelSU-Next fork with SUSFS built-in as a standalone module — **no kernel source patching required**.
 
+---
+
 ## What is this?
 
 SUSFS (SUS_FS) is a kernel module for hiding modifications from detection. Traditionally, adding SUSFS meant manually patching your kernel source with dozens of hunks across multiple files. This fork integrates SUSFS directly into KernelSU-Next as a self-contained driver under `kernel/susfs/`. You get full SUSFS functionality from a single `curl | bash` setup.
@@ -30,6 +30,8 @@ SUSFS (SUS_FS) is a kernel module for hiding modifications from detection. Tradi
 ```
 curl -LSs https://raw.githubusercontent.com/Youffx/KernelSU-Next/legacy-susfs/kernel/setup.sh | bash -s legacy-susfs
 ```
+
+---
 
 ## Required kernel config
 
@@ -45,11 +47,15 @@ CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
 CONFIG_KSU_SUSFS_SUS_MAP=y
 ```
 
+---
+
 ## How it works
 
 The setup script integrates KernelSU-Next into your kernel source tree. All SUSFS code lives in `kernel/susfs/` and is compiled as part of the KernelSU driver — no separate patches, no `fs/stat.c` or `kernel/sys.c` modifications needed.
 
 The build system (`kernel/Kbuild`) auto-detects SUSFS files and wires them in. Just set the config symbols above and build.
+
+---
 
 ## SUSFS features
 
@@ -61,6 +67,8 @@ The build system (`kernel/Kbuild`) auto-detects SUSFS files and wires them in. J
 | OPEN_REDIRECT | Redirect file opens to a decoy path |
 | SUS_MAP | Hide suspicious mapped regions |
 | HIDE_SYMBOLS | Strip SUSFS symbols from `/proc/kallsyms` |
+
+---
 
 ## License
 
