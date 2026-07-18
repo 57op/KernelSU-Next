@@ -75,3 +75,9 @@ The build system (`kernel/Kbuild`) auto-detects SUSFS files and wires them in. J
 ## License
 
 GPL-2.0-only (kernel code).
+
+---
+
+## Credits
+
+[KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next) — the upstream project this fork is based on.
