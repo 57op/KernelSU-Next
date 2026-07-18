@@ -1189,6 +1189,8 @@ static void susfs_sdcard_cleanup_fn(struct work_struct *work)
 	if (grp)
 		fsnotify_destroy_group(grp);
 
+	g_watch.mark = NULL;
+
 	inode = xchg(&g_watch.inode, NULL);
 	if (inode)
 		iput(inode);
@@ -1241,12 +1243,18 @@ static int susfs_handle_sdcard_inode_event(struct fsnotify_group *group,
 	return 0;
 }
 
+static void susfs_free_fsnotify_mark(struct fsnotify_mark *mark)
+{
+	kfree(mark);
+}
+
 static const struct fsnotify_ops fsnotify_ops = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 	.handle_inode_event = susfs_handle_sdcard_inode_event,
 #else
 	.handle_event = susfs_handle_sdcard_inode_event,
 #endif
+	.free_mark = susfs_free_fsnotify_mark,
 };
 
 static int susfs_sdcard_monitor_fn(void *data)
@@ -1273,8 +1281,26 @@ static int susfs_sdcard_monitor_fn(void *data)
 	if (IS_ERR(g))
 		return PTR_ERR(g);
 
+	g_watch.mark = kzalloc(sizeof(struct fsnotify_mark), GFP_KERNEL);
+	if (!g_watch.mark) {
+		fsnotify_destroy_group(g);
+		g = NULL;
+		return -ENOMEM;
+	}
+	fsnotify_init_mark(g_watch.mark, g);
+
 	ret = watch_one_dir(&g_watch);
 	SUSFS_LOGI("sdcard monitor started, ret: %d\n", ret);
+	if (ret) {
+		if (g_watch.mark) {
+			fsnotify_put_mark(g_watch.mark);
+			g_watch.mark = NULL;
+		} else {
+			fsnotify_destroy_group(g);
+			g = NULL;
+		}
+		return ret;
+	}
 	return 0;
 }
 
