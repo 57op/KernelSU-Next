@@ -21,7 +21,7 @@
   </p>
 </div>
 
-A KernelSU-Next fork with SUSFS built-in as a standalone module — **no kernel source patching required**.
+**4.19 kernel only.** A KernelSU-Next fork with SUSFS built-in as a standalone module — **no kernel source patching required**.
 
 ---
 
