@@ -34,6 +34,8 @@ extern void susfs_set_zygote_sid(void);
 extern void susfs_set_init_sid(void);
 extern void susfs_set_priv_app_sid(void);
 
+void susfs_setup_sids(void);
+
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 DEFINE_STATIC_KEY_TRUE(susfs_is_log_enabled);
 #define SUSFS_LOGI(fmt, ...) \
