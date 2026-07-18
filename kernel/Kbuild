@@ -39,7 +39,7 @@ kernelsu-objs += supercall/dispatch.o
 kernelsu-objs += supercall/perm.o
 kernelsu-objs += supercall/supercall.o
 
-kernelsu-objs += susfs/susfs.o
+kernelsu-$(CONFIG_KSU_SUSFS) += susfs/susfs.o
 
 kernelsu-objs += feature/adb_root.o
 kernelsu-objs += feature/selinux_hide.o
@@ -318,6 +318,7 @@ $(info -- SUSFS_VERSION: $(SUSFS_VERSION))
 $(info -- KernelSU-Next SUSFS source: $(KSU_KERNEL_DIR)/susfs/)
 endif
 
+ifneq ($(CONFIG_KSU_SUSFS),)
 # SUSFS auto-patching for kernel hook points
 # These insert function pointers (NULL by default) that KSU init wires up.
 ifneq ($(shell grep -q "susfs_kstat_hook" $(srctree)/fs/stat.c; echo $$?),0)
@@ -330,6 +331,7 @@ ifneq ($(shell grep -q "susfs_uname_hook" $(srctree)/kernel/sys.c; echo $$?),0)
 $(info -- KSU_NEXT SUSFS: adding susfs_uname_hook to $(srctree)/kernel/sys.c)
 $(shell sed -i '/^#include "uid16.h"/a #ifdef CONFIG_KSU\nvoid (*susfs_uname_hook)(struct new_utsname *tmp) = NULL;\n#endif' $(srctree)/kernel/sys.c)
 $(shell sed -i '/^\tup_read(&uts_sem);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_uname_hook))\n\t\tsusfs_uname_hook(\&tmp);\n#endif' $(srctree)/kernel/sys.c)
+endif
 endif
 
 # Keep a new line here!! Because someone may append config
