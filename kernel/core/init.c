@@ -20,7 +20,7 @@
 #include "feature/sulog.h"
 #include "infra/file_wrapper.h"
 #ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs.h>
+#include "susfs/susfs.h"
 #endif // #ifdef CONFIG_KSU_SUSFS
 #include "selinux/selinux.h"
 #include "feature/selinux_hide.h"

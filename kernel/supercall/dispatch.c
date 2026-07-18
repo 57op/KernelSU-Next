@@ -7,7 +7,7 @@
 #include <linux/thread_info.h>
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/namei.h>
-#include <linux/susfs.h>
+#include "../susfs/susfs.h"
 #include "objsec.h"
 #endif // #ifdef CONFIG_KSU_SUSFS
 #include "uapi/supercall.h"

@@ -27,7 +27,7 @@
 #include "feature/kernel_umount.h"
 #include "compat/kernel_compat.h"
 #ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs_def.h>
+#include "../susfs/susfs_def.h"
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 extern void disable_seccomp(struct task_struct *tsk);

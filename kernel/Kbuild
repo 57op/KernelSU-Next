@@ -39,6 +39,8 @@ kernelsu-objs += supercall/dispatch.o
 kernelsu-objs += supercall/perm.o
 kernelsu-objs += supercall/supercall.o
 
+kernelsu-objs += susfs/susfs.o
+
 kernelsu-objs += feature/adb_root.o
 kernelsu-objs += feature/selinux_hide.o
 
@@ -308,13 +310,26 @@ ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-mis
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable
 
 ## For susfs stuff ##
-ifeq ($(shell test -e $(srctree)/fs/susfs.c; echo $$?),0)
-$(eval SUSFS_VERSION=$(shell cat $(srctree)/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g'))
+SUSFS_HEADER := $(KSU_KERNEL_DIR)/susfs/susfs.h
+ifeq ($(shell test -e $(SUSFS_HEADER); echo $$?),0)
+$(eval SUSFS_VERSION=$(shell cat $(SUSFS_HEADER) | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g'))
 $(info )
 $(info -- SUSFS_VERSION: $(SUSFS_VERSION))
-else
-$(info -- You have not integrated susfs in your kernel yet.)
-$(info -- Read: https://gitlab.com/simonpunk/susfs4ksu)
+$(info -- KernelSU-Next SUSFS source: $(KSU_KERNEL_DIR)/susfs/)
+endif
+
+# SUSFS auto-patching for kernel hook points
+# These insert function pointers (NULL by default) that KSU init wires up.
+ifneq ($(shell grep -q "susfs_kstat_hook" $(srctree)/fs/stat.c; echo $$?),0)
+$(info -- KSU_NEXT SUSFS: adding susfs_kstat_hook to $(srctree)/fs/stat.c)
+$(shell sed -i '/^#include <asm\/unistd.h>/a #ifdef CONFIG_KSU\nvoid (*susfs_kstat_hook)(struct inode *inode, struct kstat *stat) = NULL;\n#endif' $(srctree)/fs/stat.c)
+$(shell sed -i '/^EXPORT_SYMBOL(generic_fillattr)/i #ifdef CONFIG_KSU\n\tif (unlikely(susfs_kstat_hook))\n\t\tsusfs_kstat_hook(inode, stat);\n#endif' $(srctree)/fs/stat.c)
+endif
+
+ifneq ($(shell grep -q "susfs_uname_hook" $(srctree)/kernel/sys.c; echo $$?),0)
+$(info -- KSU_NEXT SUSFS: adding susfs_uname_hook to $(srctree)/kernel/sys.c)
+$(shell sed -i '/^#include "uid16.h"/a #ifdef CONFIG_KSU\nvoid (*susfs_uname_hook)(struct new_utsname *tmp) = NULL;\n#endif' $(srctree)/kernel/sys.c)
+$(shell sed -i '/^\tup_read(&uts_sem);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_uname_hook))\n\t\tsusfs_uname_hook(\&tmp);\n#endif' $(srctree)/kernel/sys.c)
 endif
 
 # Keep a new line here!! Because someone may append config
