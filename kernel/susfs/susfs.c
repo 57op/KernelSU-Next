@@ -1304,11 +1304,12 @@ static void susfs_run_extra_works(struct work_struct *work)
 
 /* ----------------------------------------------------------------- */
 /*  Kernel hook registration                                         */
-/*  These function pointers are defined in kernel source by Kbuild    */
-/*  auto-patching. We extern them here and wire them at init.         */
+/*  Defined here so the symbol exists regardless of Kbuild sed        */
+/*  patching. Kbuild injects call sites into fs/stat.c and            */
+/*  kernel/sys.c that reference these.                                */
 /* ----------------------------------------------------------------- */
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-extern void (*susfs_kstat_hook)(struct inode *inode, struct kstat *stat);
+void (*susfs_kstat_hook)(struct inode *inode, struct kstat *stat) = NULL;
 static int __init susfs_register_kstat_hook(void)
 {
 	susfs_kstat_hook = susfs_sus_kstat_spoof_generic_fillattr;
@@ -1319,7 +1320,7 @@ static int __init susfs_register_kstat_hook(void) { return 0; }
 #endif
 
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
-extern void (*susfs_uname_hook)(struct new_utsname *tmp);
+void (*susfs_uname_hook)(struct new_utsname *tmp) = NULL;
 static int __init susfs_register_uname_hook(void)
 {
 	susfs_uname_hook = susfs_spoof_uname;
