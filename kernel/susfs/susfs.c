@@ -1306,17 +1306,15 @@ static int susfs_sdcard_monitor_fn(void *data)
 	fsnotify_init_mark(g_watch.mark, g);
 
 	ret = watch_one_dir(&g_watch);
-	SUSFS_LOGI("sdcard monitor started, ret: %d\n", ret);
 	if (ret) {
-		if (g_watch.mark) {
-			fsnotify_put_mark(g_watch.mark);
-			g_watch.mark = NULL;
-		} else {
-			fsnotify_destroy_group(g);
-			g = NULL;
-		}
+		SUSFS_LOGI("sdcard monitor start failed: %d\n", ret);
+		fsnotify_put_mark(g_watch.mark);
+		g_watch.mark = NULL;
+		fsnotify_destroy_group(g);
+		g = NULL;
 		return ret;
 	}
+	SUSFS_LOGI("sdcard monitor started\n");
 	return 0;
 }
 
