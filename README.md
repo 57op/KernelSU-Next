@@ -35,7 +35,16 @@ curl -LSs https://raw.githubusercontent.com/Youffx/KernelSU-Next/legacy-susfs/ke
 
 ---
 
-## Required kernel config
+## Required
+
+As usual, you must manually apply the required hooks to the kernel source, then configure the following options:
+
+```
+CONFIG_KSU=y
+CONFIG_KSU_MANUAL_HOOK=y
+# CONFIG_KSU_KPROBES_HOOK is not set
+# CONFIG_KSU_DEBUG is not set
+```
 
 Enable SUSFS and its features in your kernel config:
 
