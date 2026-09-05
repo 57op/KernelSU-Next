@@ -1207,9 +1207,49 @@ static void susfs_sdcard_cleanup_fn(struct work_struct *work)
 	}
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+static void susfs_fsnotify_mark_free(struct fsnotify_mark *mark)
+{
+	if (mark) {
+		kfree(mark);
+	}
+}
+#endif
+
+static int add_mark_on_inode(struct inode *inode, u32 mask,
+                             struct fsnotify_mark **out)
+{
+	struct fsnotify_mark *m;
+	int ret;
+
+	m = kzalloc(sizeof(*m), GFP_KERNEL);
+	if (!m)
+		return -ENOMEM;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+	fsnotify_init_mark(m, g);
+	m->mask = mask;
+	ret = fsnotify_add_inode_mark(m, inode, 0);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+	fsnotify_init_mark(m, g);
+	m->mask = mask;
+	ret = fsnotify_add_mark(m, inode, NULL, 0);
+#else
+	fsnotify_init_mark(m, susfs_fsnotify_mark_free);
+	m->mask = mask;
+	ret = fsnotify_add_mark(m, g, inode, NULL, 0);
+#endif
+
+	if (ret) {
+		fsnotify_put_mark(m);
+		return -EINVAL;
+	}
+	*out = m;
+	return 0;
+}
+
 static int watch_one_dir(struct watch_dir *wd)
 {
-	struct fsnotify_mark *mark;
 	int ret = kern_path(wd->path, LOOKUP_FOLLOW, &wd->kpath);
 	if (ret) {
 		SUSFS_LOGI("path not ready: %s (%d)\n", wd->path, ret);
@@ -1221,17 +1261,8 @@ static int watch_one_dir(struct watch_dir *wd)
 		return -ENOENT;
 	}
 	ihold(wd->inode);
-
-	mark = wd->mark;
-	if (!mark) {
-		SUSFS_LOGE("mark is NULL for '%s'\n", wd->path);
-		iput(wd->inode);
-		wd->inode = NULL;
-		path_put(&wd->kpath);
-		return -EINVAL;
-	}
-
-	ret = fsnotify_add_inode_mark(mark, wd->inode, 0);
+	
+	ret = add_mark_on_inode(wd->inode, wd->mask, &wd->mark);
 	if (ret) {
 		iput(wd->inode);
 		wd->inode = NULL;
