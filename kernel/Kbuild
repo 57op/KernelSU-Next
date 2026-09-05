@@ -277,22 +277,26 @@ $(info -- SUSFS_VERSION: $(SUSFS_VERSION))
 $(info -- KernelSU-Next SUSFS source: $(KSU_KERNEL_DIR)/susfs/)
 endif
 
-ifneq ($(CONFIG_KSU_SUSFS),)
 # SUSFS auto-patching for kernel hook points
 # These insert function pointers (NULL by default) that KSU init wires up.
+ifneq ($(CONFIG_KSU_SUSFS_SUS_KSTAT),)
 ifneq ($(shell grep -q "susfs_kstat_hook" $(srctree)/fs/stat.c; echo $$?),0)
 $(info -- KSU_NEXT SUSFS: adding susfs_kstat_hook call to $(srctree)/fs/stat.c)
-$(shell sed -i '/^EXPORT_SYMBOL(generic_fillattr)/i #ifdef CONFIG_KSU\n\tif (unlikely(susfs_kstat_hook))\n\t\tsusfs_kstat_hook(inode, stat);\n#endif' $(srctree)/fs/stat.c)
+$(shell sed -i '/^EXPORT_SYMBOL(generic_fillattr)/i #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT\n\tif (unlikely(susfs_kstat_hook))\n\t\tsusfs_kstat_hook(inode, stat);\n#endif' $(srctree)/fs/stat.c)
+endif
 endif
 
+ifneq ($(CONFIG_KSU_SUSFS_SPOOF_UNAME),)
 ifneq ($(shell grep -q "susfs_uname_hook" $(srctree)/kernel/sys.c; echo $$?),0)
 $(info -- KSU_NEXT SUSFS: adding susfs_uname_hook call to $(srctree)/kernel/sys.c)
-$(shell sed -i '/^\tup_read(&uts_sem);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_uname_hook))\n\t\tsusfs_uname_hook(\&tmp);\n#endif' $(srctree)/kernel/sys.c)
+$(shell sed -i '/^\tup_read(&uts_sem);/a #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME\n\tif (unlikely(susfs_uname_hook))\n\t\tsusfs_uname_hook(\&tmp);\n#endif' $(srctree)/kernel/sys.c)
+endif
 endif
 
+ifneq ($(CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG),)
 ifneq ($(shell grep -q "susfs_cmdline_hook" $(srctree)/fs/proc/cmdline.c; echo $$?),0)
 $(info -- KSU_NEXT SUSFS: adding susfs_cmdline_hook call to $(srctree)/fs/proc/cmdline.c)
-$(shell sed -i '/^\tseq_printf(m, "%s\\n", saved_command_line);/a #ifdef CONFIG_KSU\n\tif (unlikely(susfs_cmdline_hook)) {\n\t\tsusfs_cmdline_hook(m);\n\t\treturn 0;\n\t}\n#endif' $(srctree)/fs/proc/cmdline.c)
+$(shell sed -i '/^\tseq_printf(m, "%s\\n", saved_command_line);/a #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG\n\tif (unlikely(susfs_cmdline_hook)) {\n\t\tsusfs_cmdline_hook(m);\n\t\treturn 0;\n\t}\n#endif' $(srctree)/fs/proc/cmdline.c)
 endif
 endif
 
