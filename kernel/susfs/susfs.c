@@ -1241,11 +1241,7 @@ static int watch_one_dir(struct watch_dir *wd)
 	return 0;
 }
 
-static int susfs_handle_sdcard_inode_event(struct fsnotify_group *group,
-					   struct inode *inode, u32 mask,
-					   const void *data, int data_type,
-					   susfs_fname_t file_name, u32 cookie,
-					   struct fsnotify_iter_info *iter_info)
+static SUSFS_DECL_FSNOTIFY_OPS(susfs_handle_sdcard_inode_event)
 {
 	if (!file_name || susfs_fname_len(file_name) != 7 ||
 	    memcmp(susfs_fname_arg(file_name), "Android", 7))
